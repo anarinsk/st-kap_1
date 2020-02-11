@@ -4,6 +4,8 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import os
+import pickle 
+from urllib.request import urlopen
 # matplot related 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
@@ -23,23 +25,21 @@ plt.rcParams['ytick.labelsize'] = 10.
 plt.rcParams['axes.labelsize'] = 13.
 mpl.rcParams['figure.dpi'] = 300.
 #plt.gcf().canvas.renderer.dpi = 300.
-
+old_opt_1 = "blank"
 #%% Functions to use 
 ## %% Misc. funcs
-here = "work"
-def gen_dir(terminal, where=here):
-    if where == "work": 
-        base_dir = 'D:/'
-    else:
-        base_dir = 'C:/Users/anari/'
-    
-    github_dir = 'github/adp-kap_1/'
-    return os.path.join(base_dir, github_dir, terminal)
+
+def gen_url(unit):
+    if unit == "광역": 
+        url = "https://github.com/anarinsk/st-kap_1/blob/master/gwang_2.pkl?raw=true"
+    else: 
+        url = "https://github.com/anarinsk/st-kap_1/blob/master/sigun_2.pkl?raw=true"
+    return url 
 ## %% Load, Pivot, Massage
 @st.cache
 def loading_pkl_df(depth):
-    depth2 = depth + '.pkl'
-    df = pd.read_pickle(gen_dir(depth2))
+    url = urlopen(gen_url(depth))
+    df = pickle.load(url)
     if depth == '광역': 
         df1 = df.stack(level=['광역']).reset_index()
     else:
@@ -50,8 +50,8 @@ def loading_pkl_df(depth):
 # %%
 df_lv1 = loading_pkl_df('광역')
 df_lv2 = loading_pkl_df('시군구1')
-
-
+fig_size = (6,6)
+#%%
 ## %% Funcions 
 def append_total(df, list_name): 
     list1 = df[list_name].unique().tolist()
@@ -113,7 +113,7 @@ def draw_grouped_step(
                 df, 
                 depth, 
                 selected_region="no",
-                figsize=(9,6)):
+                figsize=fig_size):
 
     fig, ax = plt.subplots(figsize=figsize)
     
@@ -156,7 +156,7 @@ def draw_grouped_step(
         ax2 = ax.twinx()
         ax2.set_ylim(ax.get_ylim())
         ax2.set_yticks(data['청년 구매율'])
-        ax2.set_yticklabels(data[depth], alpha=1, color="black", size=12)
+        ax2.set_yticklabels(data[depth], alpha=1, color="blue", size=12)
 
     return plt.show() 
 #plt.savefig(gen_dir('광역\youthrate.png', where='work'), dpi=300)
@@ -169,7 +169,7 @@ def draw_corr(df):
     df_cor.columns = [my_depth, '상관계수']
     df_cor = df_cor.sort_values(['상관계수'], ascending=True)
 
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = plt.subplots(figsize=fig_size)
     ax.barh(df_cor[my_depth], df_cor['상관계수'], align='center')
     ax.legend([r'Kendall $\tau$'])
 
@@ -180,7 +180,6 @@ def draw_step_selected(df, selected):
 
 # %%
 st.title('남한 지역별 부동산 구매자 분석')
-st.markdown("- 감정원 아파트 구매자 자료에 기반한다.")
 
 option_1 = st.sidebar.selectbox(
     '광역 지역', append_total(df_lv1, "광역")
@@ -194,27 +193,47 @@ option_2 = st.sidebar.selectbox(
 #%%
 
 if (option_1 == "전체") & (option_2 == "전체"): 
-    st.subheader("기다리시게")
-
+    st.subheader("유의사항")
+    st.write("-----")
+    st.markdown(r"""
+        - [감정원](https://www.r-one.co.kr/rone/resis/common/main/main.do)에서 발표한 2019년 지역별 아파트 매매 자료로 제작했다.
+        - 그림1의 점선은 해당 월별 해당 지역의 평균 구매율을 나타낸다. 
+        - 청년 구매율의 정의는 아래와 같다. 
+            
+          청년 구매율 $= \dfrac{B_{y}}{B_{all}}$, 
+          where $B_y$: 20, 30대 구매자 수, $B_{all}$: 전체 구매자수 
+        - 상관계수 지표로는 Kendall $\tau$를 활용했다. 이유는 아래와 같다. 
+          - 이는 각 관찰 단위 별로 (구매자, 청년 구매율) 자료가 12개 밖에 없다. 
+          - 가격의 등락에 따른 구매자 수의 반응을 보는 것이 목적이다.       
+          - Kendal $\tau$에 관해서는 [여기](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient)를 참고하라. 
+        - 기타 문의가 있으신 경우 anarinskATgmail.com으로 연락 주시라.   
+        """)
 
 if (option_1 != "전체") & (option_2 == "전체"): 
     dft1 = gen_filtered_df(df_lv1, 20)
     dft2 = gen_mean_col(dft1) 
     draw_step_selected(dft2, selected=[option_1]) 
-    st.subheader("월별 청년 구매비율 변화 (광역 기준)")
+    st.subheader("그림1. 월별 청년 구매비율 변화 (광역 기준)")
     st.pyplot()
-    st.subheader("구매량과 청년 구매비율 (광역 기준)")
+    st.markdown(r"- 점선은 해당 월 평균을 나타낸다.")
+    st.subheader(r"그림2. 구매량과 청년 구매비율의 상관관계 (광역 기준), Kentall $\tau$")    
     draw_corr(dft2)
     st.pyplot()
 
 
 if (option_1 != "전체") & (option_2 != "전체"): 
+    
     dft1 = gen_filtered_df(df_lv2, 20)
     dft1 = dft1.loc[dft1['광역']==option_1]
     dft2 = gen_mean_col(dft1) 
-    st.subheader("월별 청년 구매비율 변화")
+    
+    st.subheader("그림1. 월별 청년 구매비율 변화 (시군구)")
     draw_step_selected(dft2, selected=[option_2]) 
     st.pyplot()
-    st.subheader(st.markdown("Kendall $\tau$"))
-    draw_corr(dft2)
-    st.pyplot()
+    
+    if (option_1 != old_opt_1):
+        st.subheader(r"그림2. 구매량과 청년 구매비율의 상관관계 (광역 기준), Kentall $\tau$")    
+        draw_corr(dft2)
+        st.pyplot()
+
+old_opt_1 = option_1
