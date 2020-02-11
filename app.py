@@ -13,11 +13,11 @@ import matplotlib.style
 import matplotlib as mpl
 import itertools
 import copy
-import random 
-
+import random
+from tempfile import NamedTemporaryFile
+#%%
 # Assign plotting style 
 mpl.style.use('seaborn-pastel')
-#plt.rcParams["font.family"] = 'NanumBarunGothic'
 plt.rcParams['axes.unicode_minus'] = False
 plt.rcParams['font.size'] = 10.
 plt.rcParams['xtick.labelsize'] = 10.
@@ -25,6 +25,12 @@ plt.rcParams['ytick.labelsize'] = 10.
 plt.rcParams['axes.labelsize'] = 13.
 mpl.rcParams['figure.dpi'] = 300.
 #plt.gcf().canvas.renderer.dpi = 300.
+# Font loading 
+fm.get_fontconfig_fonts()
+font_location = './NanumBarunGothicLight.ttf' 
+font_name = fm.FontProperties(fname=font_location).get_name()
+matplotlib.rc('font', family=font_name)
+
 old_opt_1 = "blank"
 #%% Functions to use 
 ## %% Misc. funcs
@@ -206,7 +212,7 @@ if (option_1 == "전체") & (option_2 == "전체"):
           - 이는 각 관찰 단위 별로 (구매자, 청년 구매율) 자료가 12개 밖에 없다. 
           - 가격의 등락에 따른 구매자 수의 반응을 보는 것이 목적이다.       
           - Kendal $\tau$에 관해서는 [여기](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient)를 참고하라. 
-        - 기타 문의가 있으신 경우 anarinskATgmail.com으로 연락 주시라.   
+        - 기타 문의가 있으신 경우 anarinskATgmail.com으로 연락 바란다. 
         """)
 
 if (option_1 != "전체") & (option_2 == "전체"): 
@@ -216,6 +222,7 @@ if (option_1 != "전체") & (option_2 == "전체"):
     st.subheader("그림1. 월별 청년 구매비율 변화 (광역 기준)")
     st.pyplot()
     st.markdown(r"- 점선은 해당 월 평균을 나타낸다.")
+    st.write("-----")
     st.subheader(r"그림2. 구매량과 청년 구매비율의 상관관계 (광역 기준), Kentall $\tau$")    
     draw_corr(dft2)
     st.pyplot()
@@ -230,7 +237,7 @@ if (option_1 != "전체") & (option_2 != "전체"):
     st.subheader("그림1. 월별 청년 구매비율 변화 (시군구)")
     draw_step_selected(dft2, selected=[option_2]) 
     st.pyplot()
-    
+    st.write("-----")
     if (option_1 != old_opt_1):
         st.subheader(r"그림2. 구매량과 청년 구매비율의 상관관계 (광역 기준), Kentall $\tau$")    
         draw_corr(dft2)
