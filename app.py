@@ -17,7 +17,7 @@ import random
 
 # Assign plotting style 
 mpl.style.use('seaborn-pastel')
-plt.rcParams["font.family"] = 'NanumBarunGothic'
+#plt.rcParams["font.family"] = 'NanumBarunGothic'
 plt.rcParams['axes.unicode_minus'] = False
 plt.rcParams['font.size'] = 10.
 plt.rcParams['xtick.labelsize'] = 10.
